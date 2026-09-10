@@ -1,5 +1,10 @@
-on: [push]
-name: Lines of Code
+name: loc
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
 
 jobs:
   loc_job:
