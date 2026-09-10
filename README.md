@@ -26,7 +26,7 @@
 
 ## Wexflow
 
-Wexflow is an open-source workflow automation engine that supports a wide range of tasks, from file operations and system processes to scripting, networking, and more. Wexflow targets both developers and technical users who need automation (file ops, tasks, scheduling, alerts, etc.). Wexflow focuses on automating technical jobs like moving or uploading files, sending emails, running scripts, or scheduling batch processes. For more complex scenarios, you can create your own custom activities, install them, and use them to extend its capabilities.
+Wexflow is an open-source and cross-platform workflow automation engine that supports a wide range of tasks, from file operations and system processes to scripting, networking, and more. Wexflow targets both developers and technical users who need automation (file ops, tasks, scheduling, alerts, etc.). Wexflow focuses on automating technical jobs like moving or uploading files, sending emails, running scripts, or scheduling batch processes. For more complex scenarios, you can create your own custom activities, install them, and use them to extend its capabilities.
 
 ## Quick Links
 <!--
