@@ -156,4 +156,21 @@ $innoScripts | ForEach-Object {
     Write-Host "Updated $innoScript"
 }
 
+# ---------------------------------------------------------
+# 7. Update NuGet .nuspec file
+# ---------------------------------------------------------
+$nuspecFile = (Join-Path $BaseDir "src\net\Wexflow.Core\Wexflow.Core.nuspec")
+if (Test-Path -Path $nuspecFile) {
+    $nuspecContent = [System.IO.File]::ReadAllText($nuspecFile)
+
+    $nuspecContent = [regex]::Replace(
+        $nuspecContent,
+        '(<version>)[^<]*(</version>)',
+        { param($m) "$($m.Groups[1].Value)$FullVersion$($m.Groups[2].Value)" }
+    )
+
+    [System.IO.File]::WriteAllText($nuspecFile, $nuspecContent)
+    Write-Host "Updated $nuspecFile"
+}
+
 Write-Host "All version updates complete."
