@@ -439,45 +439,81 @@ namespace Wexflow.Server
                 context.Response.Headers["Connection"] = "keep-alive";
 
                 var broadcaster = context.RequestServices.GetRequiredService<WorkflowStatusBroadcaster>();
-                var tcs = new TaskCompletionSource();
+
+                // Thread-safe channel to serialize status event writes without concurrent stream conflicts
+                var channel = System.Threading.Channels.Channel.CreateUnbounded<string>(new System.Threading.Channels.UnboundedChannelOptions
+                {
+                    SingleReader = true,
+                    SingleWriter = false
+                });
 
                 void Send(string status)
                 {
-                    if (context.RequestAborted.IsCancellationRequested)
+                    if (!context.RequestAborted.IsCancellationRequested)
                     {
-                        tcs.TrySetResult();
-                        return;
+                        channel.Writer.TryWrite(status);
                     }
-                    _ = System.Threading.Tasks.Task.Run(async () =>
-                    {
-                        var json = JsonConvert.SerializeObject(new
-                        {
-                            workflowId,
-                            jobId,
-                            status,
-                            name = workflow.Name,
-                            description = workflow.Description,
-                        });
-
-                        var message = $"data: {json}\n\n";
-                        await context.Response.WriteAsync(message);
-                        await context.Response.Body.FlushAsync();
-
-                        broadcaster.Unsubscribe(workflowId, jobId, Send);
-                        tcs.TrySetResult();
-                    });
                 }
 
                 broadcaster.Subscribe(workflowId, jobId, Send);
 
-                var cancellation = context.RequestAborted.Register(() =>
+                try
+                {
+                    // Send periodic keep-alive comments every 15 seconds to prevent intermediate proxies from closing idle connections
+                    using var timer = new System.Threading.PeriodicTimer(TimeSpan.FromSeconds(15));
+
+                    while (!context.RequestAborted.IsCancellationRequested)
+                    {
+                        var readTask = channel.Reader.ReadAsync(context.RequestAborted).AsTask();
+                        var timerTask = timer.WaitForNextTickAsync(context.RequestAborted).AsTask();
+
+                        var completedTask = await System.Threading.Tasks.Task.WhenAny(readTask, timerTask);
+
+                        if (completedTask == readTask)
+                        {
+                            var status = await readTask;
+
+                            var json = JsonConvert.SerializeObject(new
+                            {
+                                workflowId,
+                                jobId,
+                                status,
+                                name = workflow.Name,
+                                description = workflow.Description,
+                            });
+
+                            var message = $"data: {json}\n\n";
+                            await context.Response.WriteAsync(message, context.RequestAborted);
+                            await context.Response.Body.FlushAsync(context.RequestAborted);
+
+                            // End monitoring when reaching a terminal execution state
+                            if (Enum.TryParse<Core.Db.Status>(status, ignoreCase: true, out var parsedStatus) &&
+                                parsedStatus is Core.Db.Status.Done 
+                                or Core.Db.Status.Failed 
+                                or Core.Db.Status.Warning 
+                                or Core.Db.Status.Stopped 
+                                or Core.Db.Status.Rejected)
+                            {
+                                break;
+                            }
+                        }
+                        else
+                        {
+                            // Send a keep-alive comment to keep connection alive
+                            await context.Response.WriteAsync(": keep-alive\n\n", context.RequestAborted);
+                            await context.Response.Body.FlushAsync(context.RequestAborted);
+                        }
+                    }
+                }
+                catch (OperationCanceledException)
+                {
+                    // Client disconnected
+                }
+                finally
                 {
                     broadcaster.Unsubscribe(workflowId, jobId, Send);
-                    tcs.TrySetResult();
-                });
-
-                await tcs.Task;
-                cancellation.Dispose();
+                    channel.Writer.TryComplete();
+                }
             });
         }
 
@@ -503,7 +539,7 @@ namespace Wexflow.Server
                     // Keep the connection open until the client disconnects
                     while (!cancellationToken.IsCancellationRequested)
                     {
-                        // Optionally send a comment to keep the connection alive every 15 seconds
+                        // Send a comment to keep the connection alive every 15 seconds
                         await context.Response.WriteAsync(": keep-alive\n\n", cancellationToken);
                         await context.Response.Body.FlushAsync(cancellationToken);
 
@@ -522,7 +558,6 @@ namespace Wexflow.Server
                 }
             });
         }
-
 
         /// <summary>
         /// Search for workflows.
