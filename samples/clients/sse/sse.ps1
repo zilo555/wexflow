@@ -2,7 +2,7 @@
 
 <#
 .SYNOPSIS
-    Wexflow Server-Sent Events (SSE) Client script for PowerShell 5.1.
+    Wexflow Server-Sent Events (SSE) Client script for PowerShell 5.1+.
 
 .DESCRIPTION
     Authenticates with the Wexflow REST API, starts a specified workflow job,
@@ -98,7 +98,7 @@ function Watch-WexflowSse {
         [string]$InitialToken
     )
 
-    # Define terminal workflow states that signal completion per Wexflow documentation
+    # Terminal workflow states that signal job completion
     $terminalStatuses = @("Done", "Failed", "Warning", "Stopped", "Rejected")
     $isTerminalStateReached = $false
     $currentToken = $InitialToken
