@@ -99,7 +99,7 @@ function Watch-WexflowSse {
     )
 
     # Define terminal workflow states that signal completion per Wexflow documentation
-    $terminalStatuses = @("Done", "Failed", "Warning", "Disabled", "Stopped", "Rejected")
+    $terminalStatuses = @("Done", "Failed", "Warning", "Stopped", "Rejected")
     $isTerminalStateReached = $false
     $currentToken = $InitialToken
 
