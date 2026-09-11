@@ -1,5 +1,4 @@
 [![build](https://github.com/aelassas/wexflow/actions/workflows/build.yml/badge.svg)](https://github.com/aelassas/wexflow/actions/workflows/build.yml)
-[![release](https://github.com/aelassas/wexflow/actions/workflows/release.yml/badge.svg)](https://github.com/aelassas/wexflow/actions/workflows/release.yml)
 [![Docker Image](https://img.shields.io/badge/docker-image-brightgreen?style=flat&logo=docker)](https://hub.docker.com/r/aelassas/wexflow)
 [![NuGet](https://img.shields.io/nuget/v/Wexflow.svg)](https://www.nuget.org/packages/Wexflow/)
 [![](https://img.shields.io/badge/docs-wiki-brightgreen)](https://github.com/aelassas/wexflow/wiki)
